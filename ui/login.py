@@ -1,5 +1,6 @@
 import streamlit as st
 import base64
+import os
 from auth.db import check_key
 
 def get_base64_of_bin_file(bin_file):
@@ -10,7 +11,11 @@ def get_base64_of_bin_file(bin_file):
 def render_login_page():
     # 读取背景图片
     try:
-        img_path = "/Users/ricardo/文稿/创业/软件服务脚本/excel翻译/ui/img/wallhaven-yxxvox_副本.png"
+        # 获取当前脚本所在的目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 构建相对路径
+        img_path = os.path.join(current_dir, "img", "background.png")
+        
         bin_str = get_base64_of_bin_file(img_path)
         bg_css = f"""
         <style>
