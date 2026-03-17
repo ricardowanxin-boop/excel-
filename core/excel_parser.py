@@ -93,6 +93,17 @@ def _extract_shape_texts(file_bytes: bytes, sheet_name: str) -> Dict[str, str]:
             # drawingml main namespace
             ns = {'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'}
             
+            # 按段落提取，以保证长句完整性
+            for p_node in root.findall('.//a:p', ns):
+                t_nodes = p_node.findall('.//a:t', ns)
+                if not t_nodes:
+                    continue
+                # 拼接整个段落的内容
+                full_text = "".join([t.text for t in t_nodes if t.text])
+                if full_text.strip():
+                    texts[f"SHAPE_P||{full_text}"] = full_text.strip()
+                    
+            # 同时也保留原来的按节点提取，作为双保险
             for t_node in root.findall('.//a:t', ns):
                 if t_node.text and t_node.text.strip():
                     # 使用特殊前缀标识形状文本，键即为原始内容，方便后续替换
@@ -157,7 +168,12 @@ def _replace_text_in_xml(xml_bytes: bytes, replacements: Dict[str, str], is_draw
                     # 获取对应的译文
                     target_translation = replacements.get(full_text) or replacements.get(full_text_stripped)
                     
-                    # 将翻译结果写入第一个节点
+                    # 关键修复：Excel 的 XML 经常把一句话拆散成多个 <a:t>
+                    # 如果找到了完全匹配的译文，我们应该替换整个段落的内容，而不仅仅是清空后续节点
+                    # 因为原有的 <a:t> 节点可能带有不同的样式（如加粗、颜色），强制清空后续节点可能会导致剩余文本样式错乱，
+                    # 但为了保证文本完整性，最安全的做法是：
+                    # 1. 把译文全部放进第一个 <a:t>
+                    # 2. 清空同一段落 <a:p> 下其他所有的 <a:t>，这样译文就会继承第一个 <a:t> 的样式。
                     t_nodes[0].text = target_translation
                     # 清空其他节点
                     for t in t_nodes[1:]:
@@ -165,7 +181,10 @@ def _replace_text_in_xml(xml_bytes: bytes, replacements: Dict[str, str], is_draw
                     modified = True
                     continue
                 
-                # 如果没有匹配上完整段落，尝试逐个节点匹配
+                # 新增逻辑：如果段落拼接没有匹配上，尝试将 replacements 里的所有长文本作为子串去匹配当前段落
+                # 应对极端情况：一个文本框里有多个回车换行，被分成了多个 <a:p>
+                # 这部分很难做到完美映射，但对于长句漏翻很有帮助
+                # 暂时先用原来的逐个节点匹配兜底
                 for t_node in t_nodes:
                     if t_node.text:
                         node_text_stripped = t_node.text.strip()
@@ -175,6 +194,17 @@ def _replace_text_in_xml(xml_bytes: bytes, replacements: Dict[str, str], is_draw
                         elif node_text_stripped in replacements:
                             t_node.text = replacements[node_text_stripped]
                             modified = True
+                        else:
+                            # 终极兜底匹配：检查是否有任何译文的原文包含了这个小片段
+                            # (这可能会导致误杀，但为了解决漏翻只能尝试)
+                            # 只有当片段长度大于 3 时才尝试子串匹配，防止 "a", "1" 被乱替换
+                            if len(node_text_stripped) > 3:
+                                for orig_k, trans_v in replacements.items():
+                                    if node_text_stripped in orig_k:
+                                        # 如果这个节点只是原文的一部分，直接把它替换为完整的译文？不行，这会导致重复。
+                                        # 正确的做法是：如果它是原文的一部分，我们在这个节点塞入译文，并打上标记，
+                                        # 可是我们无法跨节点清空。所以最稳妥的还是前面的全段落拼接匹配。
+                                        pass
             
         else:
             # SharedStrings XML logic
