@@ -150,9 +150,15 @@ def _replace_text_in_xml(xml_bytes: bytes, replacements: Dict[str, str], is_draw
                 full_text = "".join([t.text for t in t_nodes if t.text])
                 
                 # 如果拼接后的完整文本在替换列表中
-                if full_text in replacements:
+                # 注意：Excel 提取出来的时候可能会带上 strip()，所以匹配时也尝试 strip
+                full_text_stripped = full_text.strip()
+                
+                if full_text in replacements or full_text_stripped in replacements:
+                    # 获取对应的译文
+                    target_translation = replacements.get(full_text) or replacements.get(full_text_stripped)
+                    
                     # 将翻译结果写入第一个节点
-                    t_nodes[0].text = replacements[full_text]
+                    t_nodes[0].text = target_translation
                     # 清空其他节点
                     for t in t_nodes[1:]:
                         t.text = ""
@@ -161,22 +167,28 @@ def _replace_text_in_xml(xml_bytes: bytes, replacements: Dict[str, str], is_draw
                 
                 # 如果没有匹配上完整段落，尝试逐个节点匹配
                 for t_node in t_nodes:
-                    if t_node.text in replacements:
-                        t_node.text = replacements[t_node.text]
-                        modified = True
+                    if t_node.text:
+                        node_text_stripped = t_node.text.strip()
+                        if t_node.text in replacements:
+                            t_node.text = replacements[t_node.text]
+                            modified = True
+                        elif node_text_stripped in replacements:
+                            t_node.text = replacements[node_text_stripped]
+                            modified = True
             
         else:
             # SharedStrings XML logic
             # <t> 标签可能在 <si> -> <t> 或者 <si> -> <r> -> <t>
             # 使用通配符查找所有 <t> 标签
-            # 注意：ElementTree 查找带命名空间的标签比较麻烦，这里尝试用通用查找
-            
-            # 简单遍历所有节点查找 tag 为 {namespace}t 的元素
             target_tag = f"{{{namespaces['main']}}}t"
             for elem in root.iter():
-                if elem.tag == target_tag:
+                if elem.tag == target_tag and elem.text:
+                    elem_text_stripped = elem.text.strip()
                     if elem.text in replacements:
                         elem.text = replacements[elem.text]
+                        modified = True
+                    elif elem_text_stripped in replacements:
+                        elem.text = replacements[elem_text_stripped]
                         modified = True
                         
         if modified:
