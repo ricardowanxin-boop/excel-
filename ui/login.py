@@ -89,6 +89,19 @@ def render_login_page():
         div[data-testid="stTextInput"] label {{
             display: none; /* 隐藏原生的label，用placeholder代替 */
         }}
+        
+        /* 强制输入框始终显示白色背景，防止鼠标移开后看不清 */
+        div[data-testid="stTextInput"] input {{
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #333333 !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+        }}
+        
+        div[data-testid="stTextInput"] input::placeholder {{
+            color: #666666 !important;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
