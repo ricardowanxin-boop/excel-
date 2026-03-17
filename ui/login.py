@@ -127,9 +127,12 @@ def render_login_page():
     
     with col2:
         st.markdown('<div class="login-title">Excel 智能翻译系统</div>', unsafe_allow_html=True)
+        # 将卡片容器和输入框分离，直接渲染内容
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True) # 闭合空的 login-card，仅作为占位或后续样式调整
         
-        input_key = st.text_input("卡密", type="password", placeholder="🔒 请输入您的卡密 / 管理员密码")
+        # 直接在列中放置输入框，不受外层 div 样式干扰
+        input_key = st.text_input("卡密", type="password", placeholder="🔒 请输入您的卡密 / 管理员密码", label_visibility="collapsed")
         
         if st.button("登 录"):
             if not input_key:
@@ -144,5 +147,3 @@ def render_login_page():
                     st.rerun()
                 else:
                     st.error(result["msg"])
-                    
-        st.markdown('</div>', unsafe_allow_html=True)
