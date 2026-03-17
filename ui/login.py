@@ -32,7 +32,7 @@ def render_login_page():
         bg_css = ""
         st.error(f"加载背景图片失败: {e}")
 
-    # CSS 样式：全屏居中卡片布局
+    # CSS 样式：仅保留最基础的容器布局调整，移除所有对 Input/Button 的侵入式样式
     st.markdown(f"""
         {bg_css}
         <style>
@@ -41,109 +41,53 @@ def render_login_page():
         
         /* 居中主容器 */
         .main .block-container {{
-            padding-top: 30vh; /* 将整体内容往下推，放在屏幕中央偏上 */
+            padding-top: 20vh; /* 调整垂直位置 */
             max-width: 100%;
         }}
         
-        /* 登录卡片样式 */
-        .login-card {{
-            background: transparent;
-            padding: 20px;
-            width: 100%;
-            margin: 0 auto;
-            text-align: center;
-            position: relative;
-            z-index: 10;
-        }}
-        
-        /* 标题样式 */
+        /* 标题样式 - 使用原生 markdown 渲染，仅调整颜色 */
         .login-title {{
-            color: #ffffff;
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 添加阴影确保在亮色背景下也能看清 */
-        }}
-        
-        /* 按钮覆盖样式 */
-        div[data-testid="stButton"] button {{
-            width: 100%;
-            background-color: #4A90E2;
-            color: white;
-            border: none;
-            padding: 10px 0;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 500;
-            margin-top: 15px;
-            transition: background-color 0.3s;
-        }}
-        
-        div[data-testid="stButton"] button:hover {{
-            background-color: #357ABD;
-            color: white;
-        }}
-        
-        /* 输入框样式微调 */
-        div[data-testid="stTextInput"] label {{
-            display: none; /* 隐藏原生的label，用placeholder代替 */
-        }}
-        
-        /* 强制输入框始终显示白色背景，防止鼠标移开后看不清 */
-        div[data-testid="stTextInput"] input {{
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            color: #333333 !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px !important;
-            padding: 10px 12px !important;
-            caret-color: #333333 !important; /* 光标颜色 */
-        }}
-        
-        /* 针对不同状态的覆盖，确保样式稳定 */
-        div[data-testid="stTextInput"] input:focus,
-        div[data-testid="stTextInput"] input:hover,
-        div[data-testid="stTextInput"] input:active {{
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            color: #333333 !important;
-            border-color: #4A90E2 !important;
-            box-shadow: 0 0 5px rgba(74, 144, 226, 0.3) !important;
-        }}
-        
-        div[data-testid="stTextInput"] input::placeholder {{
-            color: #666666 !important;
-            opacity: 1 !important; /* 确保 placeholder 不透明 */
-        }}
-        
-        /* 修复 Streamlit 内部容器可能存在的遮挡或透明度问题 */
-        div[data-testid="stTextInput"] > div {{
-            background-color: transparent !important;
+            color: #ffffff !important;
+            font-size: 32px !important;
+            font-weight: bold !important;
+            margin-bottom: 20px !important;
+            text-align: center !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }}
         </style>
     """, unsafe_allow_html=True)
 
-    # 使用一个居中的列来包裹卡片
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    # 使用 Streamlit 原生布局
+    # 使用 3 列布局将内容居中
+    col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
+        # 标题
         st.markdown('<div class="login-title">Excel 智能翻译系统</div>', unsafe_allow_html=True)
-        # 将卡片容器和输入框分离，直接渲染内容
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True) # 闭合空的 login-card，仅作为占位或后续样式调整
         
-        # 直接在列中放置输入框，不受外层 div 样式干扰
-        input_key = st.text_input("卡密", type="password", placeholder="🔒 请输入您的卡密 / 管理员密码", label_visibility="collapsed")
-        
-        if st.button("登 录"):
-            if not input_key:
-                st.error("请输入密码/卡密！")
-            else:
-                result = check_key(input_key)
-                if result["valid"]:
-                    st.session_state.logged_in = True
-                    st.session_state.user_info = result["user"]
-                    st.session_state.api_key = input_key
-                    st.success("登录成功！即将跳转...")
-                    st.rerun()
+        # 使用 Streamlit 原生容器作为"卡片"
+        # 这里的 border=False 是为了完全透明，如果需要边框可以设为 True
+        with st.container():
+            # 输入框 - 使用完全原生的 Streamlit 组件
+            input_key = st.text_input(
+                "请输入您的卡密 / 管理员密码", 
+                type="password", 
+                placeholder="🔒 请输入您的卡密 / 管理员密码",
+                label_visibility="visible" # 恢复 Label 显示，避免布局塌陷，虽然我们可能不需要它
+            )
+            
+            # 登录按钮 - 原生组件
+            # use_container_width=True 让按钮充满容器宽度
+            if st.button("登 录", type="primary", use_container_width=True):
+                if not input_key:
+                    st.error("请输入密码/卡密！")
                 else:
-                    st.error(result["msg"])
+                    result = check_key(input_key)
+                    if result["valid"]:
+                        st.session_state.logged_in = True
+                        st.session_state.user_info = result["user"]
+                        st.session_state.api_key = input_key
+                        st.success("登录成功！即将跳转...")
+                        st.rerun()
+                    else:
+                        st.error(result["msg"])
