@@ -59,6 +59,13 @@ def render_main():
         with col1:
             start_btn = st.button("🚀 开始解析与翻译", type="primary")
             
+        with col2:
+            cancel_btn = st.button("❌ 取消翻译", type="secondary")
+            if cancel_btn:
+                st.session_state.is_translating = False
+                st.warning("用户已中断翻译，本次未扣除卡密额度。")
+                st.stop()
+            
         # 如果点击了开始，或者之前已经开始了但未完成（通常在 streamlit 中点击内部按钮会重载）
         if start_btn or st.session_state.get('is_translating', False):
             # 开始前先检查额度是否足够，如果不够直接退出，给出友好提示
@@ -81,14 +88,6 @@ def render_main():
                 return
                 
             config = st.session_state.config
-            
-            # 在右侧列显示取消按钮
-            with col2:
-                cancel_btn = st.button("❌ 取消翻译", type="secondary")
-                if cancel_btn:
-                    st.session_state.is_translating = False
-                    st.warning("用户已中断翻译，本次未扣除卡密额度。")
-                    st.rerun()
             
             with st.status("正在处理中...", expanded=True) as status:
                 st.write("1️⃣ 正在解析 Excel 内容...")
@@ -129,8 +128,8 @@ def render_main():
                 progress_bar = st.progress(0)
                 try:
                     for i in range(0, len(unique_strings), batch_size):
-                        # 检查是否点击了取消
-                        if cancel_button:
+            # 检查是否点击了取消 (使用 session state 或直接检查前面定义的 cancel_btn)
+                        if cancel_btn:
                             status.update(label="已取消翻译", state="error")
                             st.warning("用户已中断翻译，本次未扣除卡密额度。")
                             return
