@@ -97,10 +97,27 @@ def render_login_page():
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 8px !important;
             padding: 10px 12px !important;
+            caret-color: #333333 !important; /* 光标颜色 */
+        }}
+        
+        /* 针对不同状态的覆盖，确保样式稳定 */
+        div[data-testid="stTextInput"] input:focus,
+        div[data-testid="stTextInput"] input:hover,
+        div[data-testid="stTextInput"] input:active {{
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #333333 !important;
+            border-color: #4A90E2 !important;
+            box-shadow: 0 0 5px rgba(74, 144, 226, 0.3) !important;
         }}
         
         div[data-testid="stTextInput"] input::placeholder {{
             color: #666666 !important;
+            opacity: 1 !important; /* 确保 placeholder 不透明 */
+        }}
+        
+        /* 修复 Streamlit 内部容器可能存在的遮挡或透明度问题 */
+        div[data-testid="stTextInput"] > div {{
+            background-color: transparent !important;
         }}
         </style>
     """, unsafe_allow_html=True)
