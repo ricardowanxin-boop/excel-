@@ -16,9 +16,19 @@ load_dotenv()
 # 初始化配置到 Session State，确保云端 Secrets 也能被正确读取
 if 'api_key' not in st.session_state:
     # 优先从 Streamlit Secrets 读取，其次从环境变量读取
-    st.session_state.api_key_config = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
-    st.session_state.api_base_url = st.secrets.get("OPENAI_BASE_URL", os.getenv("OPENAI_BASE_URL", ""))
-    st.session_state.model_name = st.secrets.get("MODEL_NAME", os.getenv("MODEL_NAME", "gpt-3.5-turbo"))
+    # 注意：本地开发时如果没有 .streamlit/secrets.toml 会报错，所以用 try-except 包裹
+    try:
+        api_key = st.secrets.get("OPENAI_API_KEY")
+        base_url = st.secrets.get("OPENAI_BASE_URL")
+        model = st.secrets.get("MODEL_NAME")
+    except FileNotFoundError:
+        api_key = None
+        base_url = None
+        model = None
+        
+    st.session_state.api_key_config = api_key or os.getenv("OPENAI_API_KEY", "")
+    st.session_state.api_base_url = base_url or os.getenv("OPENAI_BASE_URL", "")
+    st.session_state.model_name = model or os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 
 # 为了让 core.translator 能拿到最新配置，我们需要将其写入环境变量（或者修改 translator 的实现）
 os.environ["OPENAI_API_KEY"] = st.session_state.api_key_config
