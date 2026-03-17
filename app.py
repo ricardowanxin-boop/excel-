@@ -10,8 +10,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed" # 默认折叠侧边栏
 )
 
-# 加载环境变量
+# 加载环境变量 (这必须在实例化 OpenAI client 之前运行)
 load_dotenv()
+
+# 初始化配置到 Session State，确保云端 Secrets 也能被正确读取
+if 'api_key' not in st.session_state:
+    # 优先从 Streamlit Secrets 读取，其次从环境变量读取
+    st.session_state.api_key_config = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+    st.session_state.api_base_url = st.secrets.get("OPENAI_BASE_URL", os.getenv("OPENAI_BASE_URL", ""))
+    st.session_state.model_name = st.secrets.get("MODEL_NAME", os.getenv("MODEL_NAME", "gpt-3.5-turbo"))
+
+# 为了让 core.translator 能拿到最新配置，我们需要将其写入环境变量（或者修改 translator 的实现）
+os.environ["OPENAI_API_KEY"] = st.session_state.api_key_config
+os.environ["OPENAI_BASE_URL"] = st.session_state.api_base_url
+os.environ["MODEL_NAME"] = st.session_state.model_name
 
 # 初始化数据库
 from auth.db import init_db
