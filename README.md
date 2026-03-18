@@ -1,32 +1,37 @@
-# 📊 Excel 大模型无损翻译器 (Excel LLM Translator)
+# 📊 Excel 大模型无损翻译系统 (SaaS Edition)
 
 ## 简介
-这是一个基于 **Streamlit** 和 **大语言模型（LLM）** 的智能 Excel 翻译工具。它专为解决传统翻译工具无法保留复杂 Excel 格式（如文本框、形状、图表布局）的问题而设计。通过直接操作 Excel 底层 XML 结构（"Surgeon Mode" / 外科手术模式），实现了对 Excel 文件的**像素级无损翻译**。
-
-![App Screenshot](https://via.placeholder.com/800x400?text=Excel+LLM+Translator+Screenshot)
+这是一个基于 **Streamlit** 和 **大语言模型（LLM）** 的商业级 Excel 翻译 SaaS 系统。它专为解决传统翻译工具无法保留复杂 Excel 格式（如文本框、形状、图表布局）的问题而设计。通过直接操作 Excel 底层 XML 结构（"Surgeon Mode" / 外科手术模式），实现了对 Excel 文件的**像素级无损翻译**。
 
 ## 🌟 核心功能
 
 - **🛡️ 像素级无损翻译**：采用独创的 **XML 注入技术**，绕过传统库的重构过程，直接修改底层数据。完美保留 Excel 中的所有格式、样式、图片、图表、悬浮文本框、SmartArt 和复杂排版。
 - **🧠 大模型驱动**：支持接入 OpenAI 格式的任意大模型（如 Qwen, GPT-4, DeepSeek 等），结合上下文理解进行精准翻译，拒绝机翻味。
-- **🧩 复杂元素支持**：不仅支持普通单元格，还能深入提取并翻译 **Shape（形状）**、**TextBox（文本框）** 内的文字，智能处理段落拼接，解决传统库（如 openpyxl）读取丢失或无法修改的问题。
-- **💳 额度管理系统**：内置轻量级的用户鉴权、注册、登录及卡密充值系统，开箱即用，适合作为 SaaS 服务或内部工具部署。
-- **⚡️ 智能批处理**：自动提取去重、批量并发请求大模型，显著提高翻译效率并节省 Token 成本。
+- **🧩 复杂元素极致支持**：不仅支持普通单元格，还能深入提取并翻译 **Shape（形状）**、**TextBox（文本框）** 内的文字。支持**段落级(Paragraph-level)**智能拼接匹配，彻底解决长句被底层 XML 截断导致的漏翻问题。
+- **💳 SaaS级卡密计费系统**：内置完善的卡密分发与额度扣除机制，支持多种卡密类型：
+  - **按次卡 (Count Sheet)**：精确到单个 Sheet 的翻译计次。
+  - **全文件卡 (Count File)**：一次性扫描并自动翻译整个 Excel 文件的所有 Sheet，一键搞定。
+  - **时间卡 (Time)**：在有效期内无限次翻译（包含每日上限限制）。
+- **👑 独立管理后台**：内置超级管理员面板，支持动态生成卡密、查看卡密使用状态、实时编辑或删除用户数据。
+- **⚡️ 智能批处理与全局去重**：自动在整个工作簿级别提取并去重文本，批量并发请求大模型，显著提高翻译效率并大幅节省 Token 成本。
+- **🛑 实时中断控制**：翻译过程中随时可以点击“取消翻译”，立即中断 API 调用且不扣除用户额度。
+- **☁️ 云原生就绪**：完全兼容 Streamlit Community Cloud 部署，支持安全的 Secrets 动态注入，抛弃不安全的 `.env` 文件上传。
 
 ## 🛠️ 技术栈
 
-- **Frontend**: Streamlit
+- **Frontend**: Streamlit (全屏定制化 UI、动态路由)
 - **Backend**: Python 3.11+
 - **Core Processing**: 
   - `zipfile` & `xml.etree.ElementTree` (用于底层 XML 操作，实现无损读写)
   - `openpyxl` (用于辅助读取 Sheet 信息)
-- **AI Integration**: OpenAI Python SDK (兼容所有类 OpenAI 接口)
-- **Database**: SQLite (轻量级用户与额度管理)
+- **AI Integration**: OpenAI Python SDK + Tenacity (支持失败重试)
+- **Database**: SQLite (支持高并发的本地关系型数据库)
+- **Deployment**: Streamlit Cloud / Docker
 
-## 🚀 快速开始
+## 🚀 部署与运行
 
 ### 1. 环境准备
-确保已安装 Python 3.8 或以上版本。
+推荐使用 Python 3.11。
 
 ```bash
 # 克隆项目
@@ -37,81 +42,74 @@ cd excel-translator
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
-在项目根目录创建 `.env` 文件，配置大模型 API 信息：
+### 2. 环境变量配置 (本地开发)
+在项目根目录创建 `.env` 文件（**注意：此文件已加入 .gitignore，切勿上传至公开仓库**）：
 
 ```ini
 # .env
-# LLM API 配置 (以阿里云百炼 Qwen 为例，也支持 OpenAI/DeepSeek 等)
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=https://api-inference.modelscope.cn/v1
 MODEL_NAME=Qwen/Qwen3-30B-A3B-Instruct-2507
-
-# 可选：配置 Streamlit 页面信息
-ST_PAGE_TITLE="Excel 大模型无损翻译器"
 ```
 
+*如果部署到 Streamlit Cloud，请在控制台的 **Settings -> Secrets** 中使用 TOML 格式配置上述变量。*
+
 ### 3. 运行服务
-首次运行会自动在 `data/users.db` 初始化数据库结构。
 
 ```bash
 streamlit run app.py --server.port 8506
 ```
-
 启动后访问浏览器：`http://localhost:8506`
 
 ## 📖 使用指南
 
-1.  **登录/注册**：
-    - 在左侧边栏输入用户名和密码进行注册或登录。
-2.  **充值激活**：
-    - 新用户可能需要充值额度。
-    - **测试卡密**：`TEST-COUNT-100` (可在 `requirements.txt` 或数据库初始化逻辑中查看)。
-3.  **上传文件**：
-    - 点击主界面的上传区域，选择 `.xlsx` 文件。
-4.  **配置翻译**：
-    - 选择需要翻译的 **工作表 (Sheet)**。
-    - 选择 **目标语言** (如：中文、English、日本語)。
-    - 选择 **应用场景** (通用办公 / 商务贸易 / IT互联网) 以调整提示词风格。
-5.  **开始翻译**：
-    - 点击 "🚀 开始解析与翻译"。
-    - 系统将自动提取文本 -> 调用 LLM 翻译 -> 无损注入回 Excel。
-6.  **下载结果**：
-    - 翻译完成后，预览表格会显示部分结果。
-    - 点击 "📥 下载翻译后的 Excel 文件" 获取最终文件。
+### 🧑‍💻 用户端
+1.  **独立登录页**：进入系统后，输入购买的卡密直接登录。
+2.  **上传文件**：选择需要翻译的 `.xlsx` 文件。
+3.  **配置翻译**：
+    - 如果是【单次卡】，选择需要翻译的工作表 (Sheet)。
+    - 如果是【全文件卡】，系统会自动隐藏选择框，默认全文件扫描。
+    - 选择 **目标语言** 和 **应用场景**。
+4.  **开始翻译**：点击 "🚀 开始解析与翻译"。过程中可随时点击 "❌ 取消翻译" 中断。
+5.  **下载结果**：翻译完成后，可在线预览前 100 条结果，并下载无损翻译后的最终文件。
 
-## 📂 项目结构
+### 👑 管理端
+1.  **管理员登录**：在登录页输入超级管理员密码（默认初始账号：`admin888`，密码：`admin888`）。
+2.  **卡密管理**：
+    - 在侧边栏生成新的卡密，可选择不同类型（按次、按文件、包月）和额度。
+    - 在数据表格中实时查看所有卡密的使用状态（剩余额度、创建时间等）。
+    - 支持直接在表格中点击编辑图标修改卡密类型，或点击删除图标作废卡密。
 
-```
+## 📂 核心架构说明
+
+```text
 excel-translator/
-├── app.py                # Streamlit 应用入口
-├── .env                  # 环境变量配置文件
+├── app.py                # 路由中心与 Streamlit 页面配置入口
+├── .python-version       # 锁定云端部署 Python 版本 (3.11)
+├── packages.txt          # 云端 Linux 系统依赖 (如 libjpeg-dev)
 ├── requirements.txt      # Python 依赖库
-├── auth/                 # 认证模块
-│   ├── __init__.py
-│   └── db.py             # SQLite 数据库操作、用户管理、卡密管理
-├── core/                 # 核心逻辑模块
-│   ├── __init__.py
-│   ├── excel_parser.py   # 【核心】Excel 解析、XML 提取与注入算法
-│   └── translator.py     # LLM API 调用封装与重试机制
-├── ui/                   # 界面模块
-│   ├── __init__.py
-│   ├── main_content.py   # 主内容区渲染逻辑
-│   └── sidebar.py        # 侧边栏渲染逻辑
-└── data/                 # 数据存储目录
-    └── users.db          # SQLite 数据库文件 (自动生成)
+├── generate_keys.py      # (可选) CLI 批量生成卡密脚本
+├── auth/                 
+│   └── db.py             # SQLite 数据库引擎、Schema 结构、RBAC 权限校验
+├── core/                 
+│   ├── excel_parser.py   # 【核心】"Surgeon Mode" 引擎，XML 段落级拆解与回填
+│   └── translator.py     # LLM 调度引擎，带指数退避重试机制
+├── ui/                   
+│   ├── login.py          # 独立的沉浸式登录 UI 
+│   ├── admin_dashboard.py# 管理员 CRUD 数据面板
+│   ├── main_content.py   # 核心翻译工作流 UI 与状态机
+│   └── sidebar.py        # 动态侧边栏组件
+└── data/                 
+    └── users.db          # 运行时自动生成的 SQLite 数据库
 ```
 
 ## ⚠️ 常见问题 (FAQ)
 
-**Q: 为什么下载的文件打开后，某些复杂的图表还在，文字却变了？**
-A: 这正是本项目的 "Surgeon Mode" 在工作。我们只修改了 Excel 压缩包内的 `sharedStrings.xml` (单元格文字) 和 `drawing.xml` (形状文字)，完全没有触碰文件的其他结构数据，因此做到了极致的格式保留。
+**Q: 为什么翻译形状（文本框）里的文字时，长段落也能完美保留格式？**
+A: 这是最新的段落级（Paragraph-level）解析引擎在起作用。系统会将 XML 中 `<a:p>` 标签下的所有文本碎片 `<a:t>` 拼接成完整句子发给大模型。回填时，将译文注入第一个节点并清空其余节点，既保证了长句不漏翻，又继承了原有的文本框样式。
 
-**Q: 翻译形状（文本框）里的文字时，格式会乱吗？**
-A: 我们尽最大努力保留了 XML 标签结构。对于被 Excel 拆分成多个片段的句子，程序实现了智能拼接和替换算法，通常能保持原有的换行和位置。但如果译文长度与原文差异过大，Excel 可能会自动调整文本框内的排版。
-
-**Q: 支持多 Sheet 批量翻译吗？**
-A: 目前版本一次仅支持选择一个 Sheet 进行翻译，以确保稳定性和 Token 消耗的可控性。
+**Q: 如何处理云端部署时的 401 报错？**
+A: 请确保在 Streamlit Cloud 的 Secrets 中正确配置了 API Key，且格式为严格的 TOML 字符串（带双引号）。代码中已实现了动态读取 Secrets 的容错机制。
 
 ---
 **License**: MIT
